@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>অভিযোগ লিখুন</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.maateen.me/nikosh/font.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --paper:#F2F5EF;
+    --card:#FFFFFF;
+    --ink:#1E2622;
+    --ink-soft:#4B564E;
+    --green:#0F5132;
+    --green-dark:#0A3C25;
+    --green-tint:#E6EEE8;
+    --maroon:#8C1D2B;
+    --brass:#AD8A4E;
+    --line:#CDD2C6;
+    --radius:10px;
+    --sans:'Noto Sans Bengali','Hind Siliguri','SolaimanLipi',system-ui,sans-serif;
+    --serif:'Nikosh','Noto Serif Bengali',Georgia,serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    line-height:1.55;
+  }
+
+  /* ---------- App bar ---------- */
+  .appbar{
+    background:var(--green-dark);
+    color:#F5F3EC;
+    height:40px;
+    padding:0 14px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .seal{
+    flex:0 0 auto;
+    width:24px;height:24px;
+    border-radius:50%;
+    border:1.5px solid var(--brass);
+    display:flex;align-items:center;justify-content:center;
+    position:relative;
+  }
+  .seal::before{
+    content:"";
+    position:absolute;inset:3px;
+    border:1px solid var(--brass);
+    border-radius:50%;
+    opacity:.6;
+  }
+  .seal svg{width:12px;height:12px;stroke:var(--brass);}
+  .appbar h1{
+    font-family:var(--serif);
+    font-weight:600;
+    font-size:14px;
+    margin:0;
+    letter-spacing:.2px;
+    white-space:nowrap;
+  }
+  .appbar p{ display:none; }
+
+  /* ---------- Layout ---------- */
+  .wrap{
+    max-width:1600px;
+    margin:0 auto;
+    padding:20px 24px 0;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:22px;
+  }
+  @media(min-width:900px){
+    .grid{grid-template-columns:1fr 1fr; align-items:start;}
+    .preview-col{position:sticky; top:18px;}
+    .grid.preview-hidden{grid-template-columns:1fr;}
+  }
+  .preview-hidden .preview-col{display:none;}
+  .top-picker{
+    max-height:20vh; min-height:60px;
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
+    margin-bottom:6px; padding-bottom:4px;
+    border-bottom:1px solid var(--line);
+  }
+  .top-picker .selector{margin-bottom:2px;}
+  .top-picker .note{margin-bottom:6px;}
+
+  /* ---------- Tabs ---------- */
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px;margin-top:0;}
+  .tab-btn{
+    padding:10px 18px;border:none;background:transparent;font-family:var(--sans);
+    font-weight:600;font-size:14px;color:var(--ink-soft);cursor:pointer;
+    border-bottom:2.5px solid transparent;margin-bottom:-1px;
+  }
+  .tab-btn.active{color:var(--green-dark);border-color:var(--green);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  /* ---------- Template selector (compact one-line chips) ---------- */
+  .selector{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding:2px 2px 8px;
+    margin-bottom:4px;
+    -webkit-overflow-scrolling:touch;
+  }
+  .tpl-card{
+    flex:0 0 auto;
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    background:var(--card);
+    border:1.5px solid var(--line);
+    border-radius:999px;
+    padding:8px 14px;
+    cursor:pointer;
+    text-align:left;
+    font-family:var(--sans);
+    transition:border-color .15s, box-shadow .15s, transform .15s;
+    white-space:nowrap;
+  }
+  .tpl-card svg{width:16px;height:16px;stroke:var(--green);flex:0 0 auto;}
+  .tpl-card .t{font-weight:600;font-size:13px;color:var(--ink);}
+  .tpl-card .s{display:none;}
+  .tpl-card.active{border-color:var(--green);box-shadow:0 0 0 1px var(--green);background:var(--green-tint);}
+  .tpl-card.active svg{stroke:var(--green-dark);}
+  .tpl-card:active{transform:scale(.98);}
+
+  /* ---------- Form ---------- */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 16px 20px;}
+  .section-title{
+    font-family:var(--serif);font-weight:600;font-size:15px;color:var(--green-dark);
+    border-bottom:1px solid var(--line);padding-bottom:8px;margin:22px 0 14px;
+    grid-column:1/-1;
+  }
+  .section-title:first-child{margin-top:0;}
+  .section-sub{font-size:12px;color:var(--ink-soft);margin:-8px 0 14px;grid-column:1/-1;}
+  .fields-grid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:14px 16px;
+  }
+  @media(min-width:640px){
+    .fields-grid{grid-template-columns:repeat(auto-fill, minmax(200px,1fr));}
+  }
+  .field{margin-bottom:0;min-width:0;}
+  .field-full{grid-column:1/-1;}
+  .field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;overflow-wrap:break-word;}
+  .field .hint{font-weight:400;color:#8b9389;}
+  .field input[type=text],.field input[type=date],.field input[type=time],
+  .field select,.field textarea{
+    width:100%;font-family:var(--sans);font-size:14px;color:var(--ink);
+    background:#FBFCFA;border:1px solid var(--line);border-radius:7px;padding:9px 10px;outline:none;
+  }
+  .field textarea{resize:vertical;min-height:64px;}
+  .field input:focus,.field select:focus,.field textarea:focus{
+    border-color:var(--green);box-shadow:0 0 0 3px rgba(15,81,50,.12);
+  }
+  .two-col{display:contents;}
+
+  .note{
+    font-size:12px;color:var(--ink-soft);background:var(--green-tint);
+    border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:18px;
+  }
+
+  /* ---------- Settings tab specifics ---------- */
+  .radio-group{display:flex;flex-direction:column;gap:10px;}
+  .radio-option{
+    display:flex;align-items:flex-start;gap:9px;font-size:13.5px;color:var(--ink);
+    background:#FBFCFA;border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;
+  }
+  .radio-option input{margin-top:3px;flex:0 0 auto;}
+  .radio-option .rt{display:block;font-weight:600;margin-bottom:2px;}
+  .radio-option .rs{display:block;font-size:12px;color:var(--ink-soft);}
+  .settings-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;align-items:center;}
+  .settings-actions .btn{padding:10px 16px;font-size:13.5px;}
+  .save-flash{font-size:12.5px;color:var(--green-dark);font-weight:600;margin-left:2px;opacity:0;transition:opacity .25s;}
+  .save-flash.show{opacity:1;}
+
+  /* ---------- Preview / paper ---------- */
+  .preview-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px 2px;flex-wrap:wrap;}
+  .preview-label{font-size:12.5px;font-weight:600;color:var(--ink-soft);margin:0;}
+  .edit-badge{
+    display:none;align-items:center;gap:5px;font-size:11px;font-weight:600;color:#8a5a00;
+    background:#FFF2D6;border:1px solid #F0D89A;border-radius:20px;padding:3px 10px;
+  }
+  .mini-btn{
+    display:none;font-size:11.5px;font-weight:600;padding:6px 10px;border-radius:6px;
+    border:1px solid var(--line);background:#fff;color:var(--ink-soft);cursor:pointer;
+  }
+  .mini-btn:hover{border-color:var(--maroon);color:var(--maroon);}
+  .preview-hint{font-size:11px;color:var(--ink-soft);margin:0 0 8px 2px;}
+  .paper-wrapper{overflow:hidden;border-radius:6px;box-shadow:0 4px 18px rgba(10,60,37,.14);background:#fff;}
+  #paper{
+    width:794px;background:#fff;padding:88px 90px 72px;
+    font-family:var(--serif);color:var(--ink);position:relative;transform-origin:top left;
+    font-size:15.5px;line-height:1.38;
+  }
+  #paper[contenteditable="true"]{outline:none;cursor:text;}
+  #paper[contenteditable="true"]:focus{box-shadow:inset 0 0 0 2px rgba(15,81,50,.28);}
+  .p-date{display:none;}
+  .p-addr-line{margin:0;line-height:1.28;}
+  .p-addr-line:not(:first-of-type){margin-left:45px;}
+  .p-subject{margin:18px 0 16px;font-weight:600;}
+  .p-greet{margin:0 0 4px;}
+  .p-body{margin:0 0 14px;text-align:justify;line-height:1.38;text-indent:42px;}
+  .p-close{margin:0 0 28px;text-align:justify;line-height:1.38;}
+  .sign-block{width:190px;margin:8px 0 0 auto;text-align:center;}
+  .sign-block .who{margin:0 0 38px;text-align:center;}
+  .sign-line{display:flex;justify-content:space-between;align-items:baseline;width:100%;margin:0 0 2px;}
+  .sign-line .app-date{font-weight:400;white-space:nowrap;}
+  .sign-line .pet-name{font-weight:400;white-space:nowrap;width:190px;text-align:center;}
+  .sign-block .mob{margin:2px 0 0;text-align:center;}
+  .blank{border-bottom:1px solid var(--ink-soft);}
+
+  /* ---------- Toolbar row: clear + preview toggle ---------- */
+  .form-toolbar{display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+  .form-toolbar .btn{padding:8px 14px;font-size:12.5px;}
+  .form-toolbar .btn svg{width:14px;height:14px;}
+
+  /* ---------- Action bar (in normal flow, appears when scrolled to) ---------- */
+  .actionbar{
+    max-width:1600px;margin:24px auto 0;background:#fff;border-top:1px solid var(--line);
+    padding:14px 24px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;
+  }
+  .actionbar .btn-ghost{flex:1 1 auto;justify-content:center;max-width:200px;}
+  .btn{
+    font-family:var(--sans);font-weight:600;font-size:14px;border-radius:8px;padding:12px 18px;
+    border:1px solid transparent;cursor:pointer;display:inline-flex;align-items:center;gap:8px;
+  }
+  .btn-primary{background:var(--green);color:#fff;flex:1 1 auto;max-width:420px;justify-content:center;}
+  .btn-primary:hover{background:var(--green-dark);}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .btn-confirm-armed{background:#F8D7C4 !important;border-color:#C0562B !important;color:#7A3010 !important;}
+  .btn-primary:disabled{background:#9BB3A5;cursor:wait;}
+  .btn-ghost{background:#fff;color:var(--ink-soft);border-color:var(--line);}
+  .btn-ghost:hover{border-color:var(--maroon);color:var(--maroon);}
+  .btn svg{width:16px;height:16px;stroke:currentColor;}
+
+  .credit{text-align:center;font-size:11.5px;color:var(--ink-soft);padding:18px 20px 8px;}
+
+  /* ---------- Print: show only the application paper ---------- */
+  @media print{
+    .appbar, .tabs, .top-picker, .form-col, .preview-toolbar, .preview-hint,
+    .edit-badge, .credit, #actionbarAnchor, .actionbar, #panel-settings, #panel-saved{
+      display:none !important;
+    }
+    .wrap{ max-width:none !important; margin:0 !important; padding:0 !important; }
+    .grid{ display:block !important; gap:0 !important; }
+    .preview-hidden .grid{ grid-template-columns:none !important; }
+    .preview-col{ display:block !important; position:static !important; }
+    .paper-wrapper{ box-shadow:none !important; overflow:visible !important; height:auto !important; }
+    #paper{ transform:none !important; width:auto !important; box-shadow:none !important; }
+  }
+</style>
+
+<style id="final-complaint-layout-overrides">
+.complainant-signature, .nibedok-block, .signature-block, .applicant-signature {
+  width: 190px !important;
+  margin-left: auto !important;
+  margin-right: 0 !important;
+  text-align: center !important;
+}
+.complainant-signature *, .nibedok-block *, .signature-block *, .applicant-signature * {
+  text-align: center !important;
+}
+</style>
+
+</head>
+<body>
+
+<div class="appbar">
+  <div class="seal">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.2 4.5 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L4.8 8.2l5-.7L12 3z"/></svg>
+  </div>
+  <div>
+    <h1>অভিযোগ লিখুন</h1>
+    <p>তথ্য পূরণ করুন, প্রথাগত থানা-অভিযোগ ফরম্যাটে PDF ডাউনলোড করুন</p>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="form" type="button">ফর্ম</button>
+    <button class="tab-btn" data-tab="settings" type="button">সেটিংস</button>
+    <button class="tab-btn" data-tab="saved" type="button">সংরক্ষিত</button>
+  </div>
+
+  <!-- ===== FORM TAB ===== -->
+  <div class="tab-panel active" id="panel-form">
+    <div class="top-picker" id="topPicker">
+      <div class="selector" id="selector"></div>
+      <div class="note" id="templateNote"></div>
+    </div>
+
+    <div class="grid">
+      <div class="form-col">
+        <div class="form-toolbar">
+          <button class="btn btn-ghost" id="previewToggleBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            লাইভ প্রিভিউ দেখুন
+          </button>
+          <button class="btn btn-ghost" id="clearEntriesBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
+            ক্লিয়ার করুন
+          </button>
+        </div>
+        <div class="card" id="formCard"></div>
+      </div>
+      <div class="preview-col">
+        <div class="preview-toolbar">
+          <p class="preview-label">লাইভ প্রিভিউ</p>
+          <span class="edit-badge" id="editBadge">✏️ সরাসরি এডিট চালু</span>
+        </div>
+        <p class="preview-hint">প্রিভিউয়ের যেকোনো অংশে সরাসরি ক্লিক করে টাইপ করে লেখা ঠিক বা যোগ করা যাবে — ফর্মে ফিল্ড না থাকা তথ্যও।</p>
+        <div class="paper-wrapper" id="paperWrapper">
+          <div id="paper"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SETTINGS TAB ===== -->
+  <div class="tab-panel" id="panel-settings">
+    <div class="card">
+      <div class="note" id="storageNote" style="display:none;">এই মুহূর্তে সেটিংস স্থায়ীভাবে সংরক্ষণ করা যাচ্ছে না — তবে চলতি সেশনে সব কিছু ঠিকমতো কাজ করবে। পেজ রিলোড করলে তথ্য মুছে যেতে পারে।</div>
+
+      <div class="section-title">থানার নাম ও পুলিশ ইউনিট</div>
+      <div class="section-sub">এখানে একবার লিখলেই তা সাথে সাথে প্রতিটি অভিযোগে স্বয়ংক্রিয়ভাবে বসে যাবে। এর জন্য ফর্মে আলাদা কোনো ফিল্ড নেই।</div>
+      <div class="fields-grid">
+        <div class="field"><label>থানার নাম</label><input type="text" id="set-thana" placeholder="যেমন: কোনাবাড়ী"></div>
+        <div class="field"><label>প্রাপকের পদবী</label>
+          <select id="set-recipientTitle">
+            <option value="অফিসার ইনচার্জ">অফিসার ইনচার্জ</option>
+            <option value="তদন্ত কেন্দ্র ইনচার্জ">তদন্ত কেন্দ্র ইনচার্জ</option>
+            <option value="ভারপ্রাপ্ত কর্মকর্তা">ভারপ্রাপ্ত কর্মকর্তা</option>
+          </select>
+        </div>
+        <div class="field field-full"><label>পুলিশ লাইন / জেলা ঠিকানা</label><input type="text" id="set-metroLine" placeholder="যেমন: গাজীপুর মেট্রোপলিটন পুলিশ, গাজীপুর।"></div>
+        <div class="field"><label>সম্বোধন</label><input type="text" id="set-greeting" placeholder="জনাব,"></div>
+      </div>
+
+      <div class="section-title">অভিযোগের ভাষার স্টাইল</div>
+      <div class="radio-group" id="set-introStyle-group">
+        <label class="radio-option">
+          <input type="radio" name="introStyle" value="formal">
+          <span><span class="rt">প্রথাগত আইনি ভাষা</span><span class="rs">"যথাবিহীত সম্মান প্রদর্শন পূর্বক বিনীত নিবেদন এই যে," — থানার প্রচলিত অভিযোগপত্রের ভাষা</span></span>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="introStyle" value="simple">
+          <span><span class="rt">সহজ বাংলা</span><span class="rs">"সবিনয় নিবেদন এই যে," — তুলনামূলক সহজ ও সংক্ষিপ্ত ভাষা</span></span>
+        </label>
+      </div>
+
+      <div class="section-title">উপসংহার বাক্য</div>
+      <div class="field"><textarea id="set-closingText" rows="3"></textarea></div>
+
+      <div class="settings-actions">
+        <button class="btn btn-primary" id="saveSettingsBtn" type="button" style="max-width:220px;">সংরক্ষণ করুন</button>
+        <button class="btn btn-ghost" id="resetSettingsBtn" type="button">ডিফল্টে ফিরিয়ে নিন</button>
+        <span class="save-flash" id="saveFlash">✓ সংরক্ষিত হয়েছে</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SAVED (CLOUD) TAB ===== -->
+  <div class="tab-panel" id="panel-saved">
+    <div class="card">
+      <div class="note">এখানে "অনলাইনে সংরক্ষণ করুন" বাটনে তৈরি করা PDF/DOC ফাইলগুলো জমা থাকবে — পরে যেকোনো ডিভাইস থেকে এই লিংকে এসে ডাউনলোড করা যাবে।</div>
+      <div id="savedList">লোড হচ্ছে...</div>
+    </div>
+  </div>
+
+  <div class="credit">এটি একটি সহায়ক খসড়া তৈরির টুল। থানায় জমা দেওয়ার আগে সকল তথ্য নিজে যাচাই করে নিন।</div>
+</div>
+
+<div id="actionbarAnchor"></div>
+<div class="actionbar" id="actionbar">
+  <button class="btn btn-primary" id="downloadBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
+    PDF ডাউনলোড করুন
+  </button>
+  <button class="btn btn-ghost" id="downloadDocBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5a1 1 0 0 0 1 1h5M6 21h12a1 1 0 0 0 1-1V8l-6-6H6a1 1 0 0 0-1 1v17a1 1 0 0 0 1 1z"/></svg>
+    DOC ফাইল ডাউনলোড করুন
+  </button>
+  <button class="btn btn-ghost" id="printBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
+    প্রিন্ট করুন
+  </button>
+  <button class="btn btn-ghost" id="saveOnlineBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+    অনলাইনে সংরক্ষণ করুন
+  </button>
+  <button class="btn btn-ghost" id="bottomResetBtn" title="সরাসরি এডিট বাতিল করে অ্যাপের তৈরি ফরম্যাটে ফিরিয়ে আনুন" disabled>
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 1 3 6.7M3 12v5M3 12H8"/></svg>
+    রিসেট
+  </button>
+</div>
+
+<script>
+/* ============ Helpers ============ */
+function esc(str){ return (str||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function bn(s){ if(s==null) return ''; return String(s).replace(/[0-9]/g, d => '০১২৩৪৫৬৭৮৯'[d]); }
+function dmy(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); if(!y) return iso; return `${d}/${m}/${y}`; }
+function hmDot(t){ if(!t) return ''; const [h,m]=t.split(':'); if(!h) return t; return `${h}.${m}`; }
+function todayISO(){ const d=new Date(); const p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; }
+const BLANK = '..................';
+function nv(v, formatter){ if(v===undefined||v===null||String(v).trim()==='') return BLANK; return formatter ? formatter(v) : v; }
+
+/* ============ Settings defaults ============ */
+const DEFAULT_SETTINGS = {
+  thana:'কোনাবাড়ী', metroLine:'গাজীপুর মেট্রোপলিটন পুলিশ,গাজীপুর',
+  recipientTitle:'অফিসার ইনচার্জ', greeting:'জনাব,',
+  introStyle:'formal',
+  closingText:'অতএব, উক্ত বিষয়টি তদন্ত পূর্বক আইনগত ব্যবস্থা গ্রহণ করিতে আপনার মর্জি হয়।'
+};
+const INTRO_STYLES = {
+  formal:'যথাবিহীত সম্মান প্রদর্শন পূর্বক বিনীত নিবেদন এই যে,',
+  simple:'সবিনয় নিবেদন এই যে,'
+};
+
+/* ============ Template definitions ============ */
+const TEMPLATES = {
+  mobile: {
+    label:'মোবাইল হারানো', sub:'হারানো/চুরি সংক্রান্ত অভিযোগ',
+    note:'মোবাইল ফোন হারিয়ে গেলে বা চুরি হলে এই আবেদনটি ব্যবহার করুন। থানায় জমা দেওয়ার সময় IMEI যাচাইয়ের জন্য ফোনের বক্স/ক্রয় রসিদ সাথে রাখুন।',
+    icon:'<path d="M8 3h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M11 18h2"/>',
+    incidentFields:[
+      { id:'incidentDate', label:'তারিখ', type:'date' },
+      { id:'period', label:'দিনের সময়', type:'select', options:['ভোর','সকাল','দুপুর','বিকাল','সন্ধ্যা','রাত'] },
+      { id:'phoneModel', label:'মোবাইল ব্র্যান্ড ও মডেল', type:'text', placeholder:'যেমন: OPPO A3x' },
+      { id:'phoneColor', label:'ফোনের রং (ঐচ্ছিক)', type:'text' },
+      { id:'lostPlace', label:'যেখান থেকে হারিয়েছে', type:'select', options:['বাসা','পকেট','ব্যাগ','বাজার','পরিবহন','কর্মস্থল','অন্যান্য'] },
+      { id:'lostPlaceDetails', label:'বিস্তারিত বিবরণ (ঐচ্ছিক)', type:'text', placeholder:'যেমন: বাসের সিটের পকেট' },
+      { id:'imei1', label:'IMEI নম্বর ১', type:'text' },
+      { id:'imei2', label:'IMEI নম্বর ২', type:'text' },
+      { id:'ram', label:'র‌্যাম (GB)', type:'text' },
+      { id:'rom', label:'রোম (GB)', type:'text' },
+      { id:'estimatedValue', label:'আনুমানিক মূল্য (ঐচ্ছিক)', type:'text', placeholder:'যেমন: ১৫,০০০' },
+      { id:'simInfo', label:'সিম নম্বর (ঐচ্ছিক)', type:'text' },
+    ],
+    buildIncident(d){
+      const colorPart = d.phoneColor ? ` (রং-${esc(d.phoneColor)})` : '';
+      const valuePart = d.estimatedValue ? ` যার আনুমানিক মূল্য ${bn(esc(d.estimatedValue))} টাকা।` : '';
+      const simPart = d.simInfo ? ` উক্ত ফোনে ব্যবহৃত সিম নম্বর- ${esc(d.simInfo)}।` : '';
+      const isSpecialPlace = (d.lostPlace === 'পরিবহন' || d.lostPlace === 'অন্যান্য');
+      const placeSegment = isSpecialPlace ? nv(d.lostPlaceDetails) : nv(d.lostPlace);
+      const detailsPart = (!isSpecialPlace && d.lostPlaceDetails) ? `, ${esc(d.lostPlaceDetails)}` : '';
+      const dropFromWord = (d.lostPlace === 'পরিবহন' || d.lostPlace === 'কর্মস্থল' || d.lostPlace === 'অন্যান্য');
+      const fromWord = dropFromWord ? '' : ' হইতে';
+      return `${dateRelationText(d)}-${nv(d.incidentDate, dmy)===BLANK?BLANK:bn(dmy(d.incidentDate))} খ্রি. ${nv(d.period)} আনুমানিক সময় আমার ব্যবহৃত ${nv(d.phoneModel)}${colorPart} মোবাইল ফোন ${placeSegment}${detailsPart}${fromWord} অসাবধানতাবশত হারিয়ে যায়। যাহার IMEI No.-${d.imei1?bn(d.imei1):BLANK}/${d.imei2?bn(d.imei2):BLANK}, RAM-${d.ram?bn(d.ram)+' GB':BLANK}, ROM-${d.rom?bn(d.rom)+' GB':BLANK}।${valuePart}${simPart} পরবর্তীতে আশেপাশে বিভিন্ন জায়গায় খোঁজাখুঁজি করে কোথাও আমার ব্যবহৃত মোবাইল ফোনটি না পেয়ে থানায় এসে অভিযোগ দায়ের করতে বিলম্ব হলো।`;
+    }
+  },
+  missing: {
+    label:'নিখোঁজ ব্যক্তি', sub:'নিখোঁজ/পলায়ন সংক্রান্ত অভিযোগ',
+    note:'পরিবারের কেউ নিখোঁজ হলে এই আবেদনটি ব্যবহার করুন। কোনো নির্দিষ্ট অভিযুক্ত (বিবাদী) ব্যক্তি না থাকলে সেই অংশের ফিল্ডগুলো খালি রাখুন — আবেদনে বিবাদী সংক্রান্ত কোনো লাইন আসবে না, শুধু সাধারণ নিখোঁজ সংক্রান্ত বিবরণ থাকবে।',
+    icon:'<circle cx="10" cy="10" r="6"/><path d="M20 20l-4.5-4.5"/>',
+    incidentFields:[
+      { id:'relation', label:'নিখোঁজ ব্যক্তির সাথে সম্পর্ক', type:'select', options:['মা','মেয়ে','স্ত্রী','ভাই','বাবা','বোন'] },
+      { id:'mpName', label:'নিখোঁজ ব্যক্তির নাম', type:'text' },
+      { id:'mpAge', label:'বয়স', type:'text' },
+      { id:'mpStatus', label:'কী করে (ঐচ্ছিক)', type:'select', options:['পড়াশুনা','চাকরি','ঘরের কাজ-কর্ম'] },
+      { id:'mpInstitution', label:'প্রতিষ্ঠান/কর্মস্থলের নাম (ঐচ্ছিক)', type:'text', placeholder:'যেমন: হাউজিং শাহিন স্কুল, ৭ম শ্রেণী' },
+
+      { id:'accusedDetails', label:'বিবাদীর তথ্য (থাকলে, ঐচ্ছিক, এক লাইনে)', type:'text', placeholder:'যেমন: ১। মোঃ কৌশিক (২০), পিতা-অজ্ঞাত, সাং-..., থানা-..., জেলা-...' },
+
+      { id:'harassmentType', label:'বিবাদীর আচরণ (ঐচ্ছিক)', type:'select', options:['প্রেম ভালোবাসা প্রস্তাব দিয়া ফুসলাইয়া আসিতেছিল','উত্তক্ত করিত','আর্থিক প্রলোভন দেখাইত','অন্যান্য'], dependsOn:'accusedDetails' },
+      { id:'harassmentDetails', label:'বিস্তারিত (ঐচ্ছিক; \'অন্যান্য\' নির্বাচন করলে লিখুন)', type:'text', dependsOn:'accusedDetails' },
+
+      { id:'incidentDate', label:'যেদিন থেকে নিখোঁজ', type:'date' },
+      { id:'purpose', label:'বাসা থেকে বের হওয়ার উদ্দেশ্য', type:'select', options:['প্রয়োজনীয় কাজ','স্কুল','কর্মস্থল','আত্মীয়ের বাড়ি','বাজার','অন্যান্য'] },
+      { id:'purposeDetails', label:'বিস্তারিত বিবরণ (ঐচ্ছিক; \'অন্যান্য\' নির্বাচন করলে অবশ্যই লিখুন)', type:'text' },
+      { id:'phoneTaken', label:'সাথে থাকা মোবাইল নম্বর (ঐচ্ছিক)', type:'text' },
+      { id:'itemsTaken', label:'সাথে যা নিয়ে গেছে (ঐচ্ছিক)', type:'select', options:['গহনা','টাকা','সন্তান','অন্যান্য','কিছুই নেয়নি'] },
+      { id:'itemsAmount', label:'পরিমাণ/বিবরণ (ভরি/টাকা/জন বা ইচ্ছামত — ঐচ্ছিক)', type:'text' },
+
+      { id:'contactMobileNumber', label:'যোগাযোগ করে থাকলে নম্বর (ঐচ্ছিক)', type:'text', dependsOn:'accusedDetails' },
+      { id:'outcomeType', label:'কল করে যা জানিয়েছে (থাকলে, ঐচ্ছিক)', type:'select', options:['তারা বিবাহ করিয়াছে','তাকে অপহরণ করা হয়েছে'], dependsOn:'accusedDetails' },
+    ],
+    introSuffix(d){
+      const hasAccused = !!(d.accusedDetails && d.accusedDetails.trim());
+      if(!hasAccused){
+        return 'আপনার থানায় হাজির হইয়া এই মর্মে অভিযোগ দায়ের করিতেছি যে, ';
+      }
+      return `আপনার থানায় হাজির হইয়া বিবাদী ${esc(d.accusedDetails)} এর বিরুদ্ধে এই মর্মে অভিযোগ দায়ের করিতেছি যে, `;
+    },
+    buildIncident(d){
+      const rel = nv(d.relation);
+      const hasAccused = !!(d.accusedDetails && d.accusedDetails.trim());
+      const statusClause = d.mpStatus ? ` আমার ${rel} ${d.mpInstitution?esc(d.mpInstitution)+'-এ ':''}${d.mpStatus} করে।` : '';
+      let harassClause = '';
+      if(d.harassmentType){
+        const harassText = d.harassmentType === 'অন্যান্য'
+          ? (d.harassmentDetails ? esc(d.harassmentDetails) : BLANK)
+          : esc(d.harassmentType);
+        harassClause = ` উল্লিখিত বিবাদী প্রায়ই আমার ${rel}-কে ${harassText}।`;
+      }
+
+      let purposeText;
+      if(d.purpose === 'অন্যান্য'){
+        purposeText = d.purposeDetails ? esc(d.purposeDetails) : BLANK;
+      } else {
+        purposeText = nv(d.purpose);
+        if(d.purposeDetails) purposeText += ` ${esc(d.purposeDetails)}`;
+      }
+      const phoneClause = d.phoneTaken ? ` তার সাথে থাকা মোবাইল যার নম্বর-${bn(d.phoneTaken)}-সহ` : '';
+
+      let itemsClause = '';
+      if(d.itemsTaken && d.itemsTaken !== 'কিছুই নেয়নি'){
+        const amt = d.itemsAmount ? bn(esc(d.itemsAmount)) : BLANK;
+        const UNIT_TEXT = { 'গহনা':`${amt} ভরি গহনা`, 'টাকা':`${amt} টাকা`, 'সন্তান':`${amt} জন সন্তান`, 'অন্যান্য':`${amt}` };
+        const itemText = UNIT_TEXT[d.itemsTaken] || esc(d.itemsTaken);
+        itemsClause = `${phoneClause?' এবং':''} ${itemText} সাথে নিয়ে`;
+      }
+
+      const callClause = d.contactMobileNumber
+        ? ` পরবর্তীতে আমার ${rel} আমার ব্যবহৃত মোবাইল নম্বরে তার ব্যবহৃত মোবাইল নং-${bn(d.contactMobileNumber)} তে কল করিয়া জানায় যে, ${nv(d.outcomeType)}।`
+        : '';
+      const takenAwayClause = hasAccused
+        ? ` খোঁজাখুঁজির একপর্যায়ে জানিতে পারি যে, আমার ${rel} উল্লিখিত বর্তমান ঠিকানার বাড়ির সামনে পৌঁছামাত্র বিবাদী আমার ${rel}-কে অজ্ঞাত স্থানে নিয়ে যায়।${callClause}`
+        : '';
+
+      return `আমি আমার উল্লিখিত বর্তমান ঠিকানায় আমার ${rel} ${nv(d.mpName)}(${d.mpAge?bn(d.mpAge):BLANK}) সহ বসবাস করিয়া আসিতেছি।${statusClause}${harassClause} ${dateRelationText(d)}-${d.incidentDate?bn(dmy(d.incidentDate)):BLANK} খ্রি. আমার ${rel} আমার উল্লিখিত বর্তমান ঠিকানা হইতে তাহার ${purposeText}-এর উদ্দেশ্যে${phoneClause}${itemsClause} বাসা হইতে বাহির হইয়া যায়। পরবর্তীতে আমার ${rel} আর বাসায় ফিরে নাই। আমার ${rel} বাসায় না ফিরলে আমি বিভিন্ন জায়গায় খোঁজাখুঁজি করিতে থাকি।${takenAwayClause} আমার ${rel}-কে বিভিন্ন জায়গায় খোঁজাখুঁজি করিয়াও সন্ধান না পাইয়া আমার পরিবারের লোকজনের সাথে আলোচনা করিয়া থানায় এসে অভিযোগ দায়ের করিতে বিলম্ব হইলো।`;
+    }
+  },
+  dispute: {
+    label:'দাম্পত্য কলহ', sub:'পারিবারিক বিরোধ সংক্রান্ত অভিযোগ',
+    note:'পারিবারিক নিরাপত্তাজনিত উদ্বেগ থাকলে অভিযোগের পাশাপাশি স্থানীয় সালিশ বা আইনি পরামর্শ নেওয়ার কথাও বিবেচনা করুন। ১ম বিবাদীর তথ্য আবশ্যিক; দ্বিতীয় কোনো বিবাদী থাকলে সেটি ঐচ্ছিকভাবে যোগ করা যাবে।',
+    icon:'<circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3"/><path d="M4 20c0-3 2-5 4-5s4 2 4 5M12 20c0-3 2-5 4-5s4 2 4 5"/>',
+    incidentFields:[
+      { id:'accusedDetails1', label:'১ম বিবাদীর তথ্য (আবশ্যিক, এক লাইনে) *', type:'text', required:true, placeholder:'যেমন: সালাম সিকদার (৩০), পিতা-জয়েন উদ্দিন, সাং-পারিজাত, ওয়ার্ড/ইউনিয়ন নং-১১, থানা-কোনাবাড়ী, জেলা-গাজীপুর' },
+      { id:'accusedDetails2', label:'২য় বিবাদীর তথ্য (ঐচ্ছিক, এক লাইনে)', type:'text', placeholder:'যেমন: করিম সিকদার (৩০), পিতা-জয়েন উদ্দিন, সাং-পারিজাত, ওয়ার্ড/ইউনিয়ন নং-১১, থানা-কোনাবাড়ী, জেলা-গাজীপুর' },
+      { id:'relationToAccused', label:'বিবাদীর সাথে সম্পর্ক', type:'select', options:['স্বামী','স্ত্রী'] },
+      { id:'marriageYearsAgo', label:'কত বছর পূর্বে বিবাহ হয়', type:'text' },
+
+      { id:'sonCount', label:'ছেলে সন্তানের সংখ্যা (ঐচ্ছিক)', type:'text' },
+      { id:'sonAge', label:'ছেলের বয়স (ঐচ্ছিক)', type:'text' },
+      { id:'daughterCount', label:'কন্যা সন্তানের সংখ্যা (ঐচ্ছিক)', type:'text' },
+      { id:'daughterAge', label:'কন্যার বয়স (ঐচ্ছিক)', type:'text' },
+
+      { id:'badHabit', label:'বিবাদীর বদভ্যাস/আচরণ (একাধিক নির্বাচন করা যাবে)', type:'checkbox-group', options:['নানা মেয়েদের সাথে প্রেম-ভালোবাসার সম্পর্ক করে বেড়ায়','মাদক সেবন করে','অনলাইন জুয়া খেলে','অন্যান্য'] },
+      { id:'badHabitDetails', label:'বিস্তারিত (\'অন্যান্য\' নির্বাচন করলে লিখুন)', type:'text', dependsOnField:'badHabit', dependsOnValue:'অন্যান্য' },
+
+      { id:'additionalDetails', label:'অতিরিক্ত বিবরণ (ঐচ্ছিক)', type:'textarea' },
+    ],
+    introSuffix(d){
+      const hasSecond = !!(d.accusedDetails2 && d.accusedDetails2.trim());
+      const primary = nv(d.accusedDetails1);
+      const accusedText = hasSecond ? `১। ${primary} ২। ${esc(d.accusedDetails2)}` : primary;
+      return `আপনার থানায় হাজির হইয়া বিবাদী ${accusedText} এর বিরুদ্ধে এই মর্মে অভিযোগ দায়ের করিতেছি যে, `;
+    },
+    buildIncident(d){
+      const relToAccused = nv(d.relationToAccused);
+      const marriageYears = d.marriageYearsAgo ? bn(d.marriageYearsAgo) : BLANK;
+
+      const sonPart = d.sonCount ? `${d.sonAge?bn(d.sonAge)+' বছর বয়সের ':''}${bn(d.sonCount)} ছেলে` : '';
+      const daughterPart = d.daughterCount ? `${d.daughterAge?bn(d.daughterAge)+' বছর বয়সের ':''}${bn(d.daughterCount)} কন্যা সন্তান` : '';
+      const childrenClause = (sonPart || daughterPart) ? ` আমাদের ${[sonPart,daughterPart].filter(Boolean).join(' ও ')} রয়েছে।` : '';
+      const hasChildren = !!(sonPart || daughterPart);
+      const maintenanceClause = hasChildren ? 'বিবাদী আমার ও আমাদের সন্তানের কোন ভরণ-পোষণ দেয় না।' : 'বিবাদী আমার কোন ভরণ-পোষণ দেয় না।';
+
+      let badHabitText = '';
+      if(Array.isArray(d.badHabit) && d.badHabit.length){
+        const parts = d.badHabit
+          .map(opt => opt==='অন্যান্য' ? (d.badHabitDetails?esc(d.badHabitDetails):null) : esc(opt))
+          .filter(Boolean);
+        if(parts.length===1) badHabitText = parts[0];
+        else if(parts.length>1) badHabitText = parts.slice(0,-1).join(', ') + ' এবং ' + parts[parts.length-1];
+      }
+      const badHabitClause = badHabitText ? ` বিবাদী প্রায় সময় ${badHabitText}।` : '';
+
+      const additionalPart = d.additionalDetails ? ` ${esc(d.additionalDetails)}` : '';
+
+      return `উক্ত বিবাদী আমার ${relToAccused}। আনুমানিক ${marriageYears} বছর পূর্বে বিবাদীর সহিত আমার বিবাহ হয়।${childrenClause} আমাদের সংসার জীবনে বিবাদী প্রায় সময় আমার সাথে কারণে অকারণে ঝগড়া বিবাদ করে আমাকে মারধর করে থাকে। ${maintenanceClause} আমি বিবাদীকে কিছু বললেই বিবাদী আমাকে নানা ভয়ভীতি ও হুমকি প্রদান করে থাকে।${badHabitClause} আমি এ বিষয়ে বিবাদীকে অনেক বুঝানোর চেষ্টা করেও বুঝাতে পারি নাই। আমি বিবাদীর অত্যাচারে অতিষ্ঠ হয়ে বিবাদীর পরিবারকে জানালে, বিবাদী কারো কথায় গুরুত্ব দেয় না এবং প্রতিনিয়ত মারধর করে নিলা-ফুলা জখম ও মানসিক নির্যাতন করে এবং আমাকে মেরে ফেলার হুমকি প্রদান করে। বিবাদীর উপরোক্ত কর্মকান্ডে আমি চরম হতাশায় ভুগতেছি।${additionalPart} এমতাবস্থায়, আমার পরিবারের লোকজনের সাথে আলোচনা করে থানায় এসে অভিযোগ দায়ের করিতে বিলম্ব হলো।`;
+    }
+  }
+};
+
+const FILE_SLUG = { mobile:'mobile-lost-complaint', missing:'missing-person-complaint', dispute:'family-dispute-complaint' };
+
+/* ============ State ============ */
+const state = {
+  current:'mobile',
+  data:{ mobile:{}, missing:{}, dispute:{} },
+  settings:{...DEFAULT_SETTINGS},
+  manualHTML:{ mobile:null, missing:null, dispute:null },
+};
+let saveTimer = null;
+let settingsSaveTimer = null;
+
+/* ============ Persistent storage ============ */
+/* window.storage may be entirely unavailable depending on where this artifact
+   is opened. Everything below degrades quietly to session-only (in-memory)
+   state if that's the case — no thrown errors, no broken UI. */
+let storageAvailable = (typeof window !== 'undefined' && !!window.storage);
+
+async function safeStorageGet(key){
+  if(!storageAvailable) return null;
+  try{
+    return await window.storage.get(key, false);
+  }catch(e){
+    storageAvailable = false;
+    onStorageUnavailable();
+    return null;
+  }
+}
+async function safeStorageSet(key, value){
+  if(!storageAvailable) return false;
+  try{
+    await window.storage.set(key, value, false);
+    return true;
+  }catch(e){
+    storageAvailable = false;
+    onStorageUnavailable();
+    return false;
+  }
+}
+function onStorageUnavailable(){
+  const note = document.getElementById('storageNote');
+  if(note) note.style.display = 'block';
+}
+
+async function loadSettings(){
+  const res = await safeStorageGet('settings');
+  if(res && res.value){
+    try{ return {...DEFAULT_SETTINGS, ...JSON.parse(res.value)}; }catch(e){ /* corrupt value, ignore */ }
+  }
+  return {...DEFAULT_SETTINGS};
+}
+async function loadAppState(){
+  const res = await safeStorageGet('app-state');
+  if(res && res.value){
+    try{ return JSON.parse(res.value); }catch(e){ /* corrupt value, ignore */ }
+  }
+  return null;
+}
+function scheduleSave(){
+  if(!storageAvailable) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    safeStorageSet('app-state', JSON.stringify({
+      current: state.current, data: state.data, manualHTML: state.manualHTML
+    }));
+  }, 500);
+}
+async function persistSettings(){
+  return await safeStorageSet('settings', JSON.stringify(state.settings));
+}
+function scheduleSaveSettings(){
+  if(!storageAvailable) return;
+  clearTimeout(settingsSaveTimer);
+  settingsSaveTimer = setTimeout(()=>{ persistSettings(); }, 500);
+}
+
+/* ============ Defaults application ============ */
+
+function dateRelationText(d){
+  const incident = d.incidentDate || d.eventDate || '';
+  const application = d.filingDate || d.applicationDate || '';
+  if(!incident) return 'অদ্য';
+  return incident === application ? 'অদ্য' : 'গত';
+}
+
+function applyDefaultsIfEmpty(key){
+  const d = state.data[key];
+  if(!d.filingDate) d.filingDate = todayISO();
+  if(!d.guardianRelation) d.guardianRelation = 'পিতা';
+  if(!d.presentThana) d.presentThana = 'কোনাবাড়ী';
+  if(!d.presentCityMetro) d.presentCityMetro = 'গাজীপুর মহানগর';
+}
+
+/* ============ Render: tabs ============ */
+function initTabs(){
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+    });
+  });
+}
+
+/* ============ Render: template selector ============ */
+function renderSelector(){
+  const el = document.getElementById('selector');
+  el.innerHTML = Object.keys(TEMPLATES).map(key=>{
+    const t = TEMPLATES[key];
+    const active = key===state.current ? ' active' : '';
+    return `<button class="tpl-card${active}" data-key="${key}" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${t.icon}</svg>
+      <span class="t">${t.label}</span><span class="s">${t.sub}</span>
+    </button>`;
+  }).join('');
+  el.querySelectorAll('.tpl-card').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      state.current = btn.dataset.key;
+      applyDefaultsIfEmpty(state.current);
+      renderSelector(); renderNote(); renderForm(); renderPreview(); fitPaper(); scheduleSave();
+    });
+  });
+}
+function renderNote(){ document.getElementById('templateNote').textContent = TEMPLATES[state.current].note; }
+
+/* ============ Render: form ============ */
+function fieldHTML(f, value, hidden){
+  const v = value==null ? '' : value;
+  const isFull = (f.type==='textarea' || f.type==='checkbox-group');
+  const cls = `field${isFull?' field-full':''}`;
+  const wrapAttrs = `${f.dependsOn?` data-depends-on="${f.dependsOn}"`:''}${f.dependsOnField?` data-depends-field="${f.dependsOnField}" data-depends-value="${esc(f.dependsOnValue)}"`:''}${hidden?' style="display:none;"':''}`;
+  if(f.type==='checkbox-group'){
+    const selected = Array.isArray(v) ? v : [];
+    const boxes = f.options.map(o=>{
+      const checked = selected.includes(o) ? 'checked' : '';
+      return `<label style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink);margin-bottom:7px;cursor:pointer;"><input type="checkbox" data-id="${f.id}" value="${esc(o)}" ${checked} style="width:16px;height:16px;flex:0 0 auto;accent-color:var(--green);">${esc(o)}</label>`;
+    }).join('');
+    return `<div class="${cls}"${wrapAttrs}><label>${f.label}</label>${boxes}</div>`;
+  }
+  if(f.type==='textarea') return `<div class="${cls}"${wrapAttrs}><label>${f.label}</label><textarea data-id="${f.id}" rows="3">${esc(v)}</textarea></div>`;
+  if(f.type==='select'){
+    const opts = f.options.map(o=>`<option value="${esc(o)}" ${o===v?'selected':''}>${esc(o)}</option>`).join('');
+    return `<div class="${cls}"${wrapAttrs}><label>${f.label}</label><select data-id="${f.id}"><option value="">নির্বাচন করুন</option>${opts}</select></div>`;
+  }
+  if(f.type==='date') return `<div class="${cls}"${wrapAttrs}><label>${f.label}</label><input type="date" data-id="${f.id}" value="${esc(v)}"></div>`;
+  if(f.type==='time') return `<div class="${cls}"${wrapAttrs}><label>${f.label}</label><input type="time" data-id="${f.id}" value="${esc(v)}"></div>`;
+  return `<div class="${cls}"${wrapAttrs}><label>${f.label}</label><input type="text" data-id="${f.id}" value="${esc(v)}" placeholder="${esc(f.placeholder||'')}"${f.required?' required':''}></div>`;
+}
+
+function renderForm(){
+  const t = TEMPLATES[state.current];
+  const d = state.data[state.current];
+  let html = '';
+
+  /* --- আবেদনকারীর তথ্য --- */
+  html += `<div class="section-title">আবেদনকারীর তথ্য</div>`;
+  html += `<div class="fields-grid">`;
+  html += fieldHTML({id:'filingDate', label:'আবেদনের তারিখ', type:'date'}, d.filingDate);
+  html += fieldHTML({id:'name', label:'নাম', type:'text'}, d.name);
+  html += fieldHTML({id:'age', label:'বয়স', type:'text'}, d.age);
+  html += fieldHTML({id:'guardianRelation', label:'সম্পর্ক', type:'select', options:['পিতা','স্বামী']}, d.guardianRelation || 'পিতা');
+  html += fieldHTML({id:'guardianName', label:(d.guardianRelation==='স্বামী'?'স্বামীর নাম':'পিতার নাম'), type:'text'}, d.guardianName);
+  html += fieldHTML({id:'motherName', label:'মাতার নাম (ঐচ্ছিক)', type:'text'}, d.motherName);
+  html += fieldHTML({id:'occupation', label:'পেশা (ঐচ্ছিক)', type:'text'}, d.occupation);
+  html += fieldHTML({id:'nid', label:'এনআইডি নম্বর (ঐচ্ছিক)', type:'text'}, d.nid);
+  html += fieldHTML({id:'contactMobile', label:'মোবাইল নম্বর', type:'text'}, d.contactMobile);
+  html += `</div>`;
+
+  /* --- স্থায়ী ঠিকানা --- */
+  html += `<div class="section-title">স্থায়ী ঠিকানা</div>`;
+  html += `<div class="fields-grid">`;
+  html += fieldHTML({id:'permSang', label:'সাং', type:'text', placeholder:'যেমন: গৌরীপুর'}, d.permSang);
+  html += fieldHTML({id:'permThana', label:'থানা', type:'text'}, d.permThana);
+  html += fieldHTML({id:'permDistrict', label:'জেলা', type:'text'}, d.permDistrict);
+  html += `</div>`;
+
+  /* --- বর্তমান ঠিকানা --- */
+  html += `<div class="section-title">বর্তমান ঠিকানা (ঐচ্ছিক)</div>`;
+  html += `<div class="section-sub">"সাং" পূরণ করলে তবেই আবেদনে "এ/পি ..." অংশ যোগ হবে; খালি রাখলে পুরো অংশটি বাদ যাবে।</div>`;
+  html += `<div class="fields-grid">`;
+  html += fieldHTML({id:'presentSang', label:'সাং', type:'text', placeholder:'যেমন: কোনাবাড়ী পল্লিবিদ্যুত'}, d.presentSang);
+  html += fieldHTML({id:'landlordInfo', label:'ভাড়া বাসার মালিকের তথ্য (ঐচ্ছিক)', type:'text', placeholder:'যেমন: তন্ময় এর বাসার ভাড়াটিয়া'}, d.landlordInfo);
+  html += fieldHTML({id:'presentThana', label:'থানা', type:'text'}, d.presentThana);
+  html += fieldHTML({id:'presentCityMetro', label:'মহানগর/উপজেলা', type:'text'}, d.presentCityMetro);
+  html += `</div>`;
+
+  /* --- ঘটনার বিবরণ --- */
+  html += `<div class="section-title">ঘটনার বিবরণ</div>`;
+  html += `<div class="fields-grid">`;
+  t.incidentFields.forEach(f=>{
+    let hidden = false;
+    if(f.dependsOnField){
+      const arr = d[f.dependsOnField];
+      hidden = !(Array.isArray(arr) && arr.includes(f.dependsOnValue));
+    } else if(f.dependsOn){
+      hidden = !d[f.dependsOn];
+    }
+    html += fieldHTML(f, d[f.id], hidden);
+  });
+  html += `</div>`;
+
+  document.getElementById('formCard').innerHTML = html;
+  const dependsOnIds = new Set(t.incidentFields.filter(f2=>f2.dependsOn).map(f2=>f2.dependsOn));
+  const dependsOnFieldIds = new Set(t.incidentFields.filter(f2=>f2.dependsOnField).map(f2=>f2.dependsOnField));
+  document.getElementById('formCard').querySelectorAll('input,select,textarea').forEach(input=>{
+    input.addEventListener('input', ()=>{
+      const id = input.dataset.id;
+      if(input.type === 'checkbox'){
+        const checked = Array.from(document.querySelectorAll(`#formCard input[type="checkbox"][data-id="${id}"]:checked`)).map(el=>el.value);
+        state.data[state.current][id] = checked;
+        if(dependsOnFieldIds.has(id)) toggleArrayDependentFields();
+        renderPreview(); fitPaper(); scheduleSave();
+        return;
+      }
+      state.data[state.current][id] = input.value;
+      if(id === 'guardianRelation'){
+        renderForm();
+      } else if(dependsOnIds.has(id)){
+        toggleDependentFields();
+      }
+      renderPreview(); fitPaper(); scheduleSave();
+    });
+  });
+}
+
+function toggleArrayDependentFields(){
+  document.querySelectorAll('#formCard [data-depends-field]').forEach(el=>{
+    const fld = el.getAttribute('data-depends-field');
+    const val = el.getAttribute('data-depends-value');
+    const arr = state.data[state.current][fld];
+    el.style.display = (Array.isArray(arr) && arr.includes(val)) ? '' : 'none';
+  });
+}
+
+function toggleDependentFields(){
+  const d = state.data[state.current];
+  document.querySelectorAll('#formCard [data-depends-on]').forEach(el=>{
+    const dep = el.getAttribute('data-depends-on');
+    el.style.display = d[dep] ? '' : 'none';
+  });
+}
+
+/* ============ Render: settings form ============ */
+function renderSettingsForm(){
+  document.getElementById('set-thana').value = state.settings.thana || '';
+  document.getElementById('set-metroLine').value = state.settings.metroLine || '';
+  document.getElementById('set-recipientTitle').value = state.settings.recipientTitle || DEFAULT_SETTINGS.recipientTitle;
+  document.getElementById('set-greeting').value = state.settings.greeting || DEFAULT_SETTINGS.greeting;
+  document.getElementById('set-closingText').value = state.settings.closingText || DEFAULT_SETTINGS.closingText;
+  document.querySelectorAll('input[name="introStyle"]').forEach(r=>{
+    r.checked = (r.value === (state.settings.introStyle || 'formal'));
+  });
+}
+function readSettingsForm(){
+  state.settings.thana = document.getElementById('set-thana').value.trim();
+  state.settings.metroLine = document.getElementById('set-metroLine').value.trim();
+  state.settings.recipientTitle = document.getElementById('set-recipientTitle').value;
+  state.settings.greeting = document.getElementById('set-greeting').value.trim() || DEFAULT_SETTINGS.greeting;
+  state.settings.closingText = document.getElementById('set-closingText').value.trim() || DEFAULT_SETTINGS.closingText;
+  const checked = document.querySelector('input[name="introStyle"]:checked');
+  state.settings.introStyle = checked ? checked.value : 'formal';
+}
+function onSettingsFieldChange(){
+  readSettingsForm();
+  if(!state.manualHTML[state.current]){ renderPreview(); fitPaper(); }
+  scheduleSaveSettings();
+}
+function attachSettingsLiveListeners(){
+  ['set-thana','set-metroLine','set-recipientTitle','set-greeting','set-closingText'].forEach(id=>{
+    document.getElementById(id).addEventListener('input', onSettingsFieldChange);
+  });
+  document.querySelectorAll('input[name="introStyle"]').forEach(r=>{
+    r.addEventListener('change', onSettingsFieldChange);
+  });
+}
+function flashSaved(persisted){
+  const el = document.getElementById('saveFlash');
+  el.textContent = persisted ? '✓ সংরক্ষিত হয়েছে' : '✓ প্রয়োগ হয়েছে (এই সেশনে)';
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 1800);
+}
+
+/* ============ Render: paper preview ============ */
+function attachPaperEditable(){
+  const paper = document.getElementById('paper');
+  paper.setAttribute('contenteditable','true');
+  paper.oninput = ()=>{
+    state.manualHTML[state.current] = paper.innerHTML;
+    updateManualBadge();
+    scheduleSave();
+  };
+}
+function updateManualBadge(){
+  const active = !!state.manualHTML[state.current];
+  document.getElementById('editBadge').style.display = active ? 'inline-flex' : 'none';
+  const bottomResetBtn = document.getElementById('bottomResetBtn');
+  if(bottomResetBtn) bottomResetBtn.disabled = !active;
+}
+
+function buildPaperHTML(){
+  const t = TEMPLATES[state.current];
+  const d = state.data[state.current];
+
+  const relation = d.guardianRelation || 'পিতা';
+  const guardianPart = `${relation}-${esc(nv(d.guardianName))}`;
+  const occupationPart = d.occupation ? `, পেশা-${esc(d.occupation)}` : '';
+  const nidPart = d.nid ? `, এনআইডি নং-${bn(esc(d.nid))}` : '';
+  const landlordPart = d.landlordInfo ? `, (${esc(d.landlordInfo)})` : '';
+  const permAddr = `সাং-${esc(nv(d.permSang))}, থানা-${esc(nv(d.permThana))}, জেলা-${esc(nv(d.permDistrict))}`;
+  const hasPresentAddr = !!(d.presentSang && d.presentSang.trim());
+  const presentAddr = `সাং-${esc(nv(d.presentSang))}${landlordPart}, থানা-${esc(nv(d.presentThana))}, ${esc(nv(d.presentCityMetro))}`;
+  const presentClause = hasPresentAddr ? ` এ/পি ${presentAddr}` : '';
+  const motherPart = d.motherName ? `, মাতা-${esc(d.motherName)}` : '';
+  const introPhrase = INTRO_STYLES[state.settings.introStyle] || INTRO_STYLES.formal;
+  const introSuffix = t.introSuffix ? t.introSuffix(d) : 'থানায় এসে এই মর্মে জানাইতেছি যে, ';
+  const intro = `${introPhrase} আমি ${esc(nv(d.name))} (${d.age?bn(d.age):BLANK}) ${guardianPart}${motherPart}, ${permAddr}${presentClause}${occupationPart}${nidPart} ${introSuffix}`;
+  const incident = esc(t.buildIncident(d));
+  const closing = esc(state.settings.closingText || DEFAULT_SETTINGS.closingText);
+  const filingDateStr = d.filingDate ? bn(dmy(d.filingDate)) : bn(dmy(todayISO()));
+
+  let html = ``;
+  html += `<p class="p-addr-line">বরাবর</p>`;
+  html += `<p class="p-addr-line">${esc(nv(state.settings.recipientTitle))}</p>`;
+  html += `<p class="p-addr-line">${esc(nv(state.settings.thana))} থানা</p>`;
+  html += `<p class="p-addr-line">${esc(nv(state.settings.metroLine))}</p>`;
+  html += `<p class="p-subject">বিষয়: অভিযোগ।</p>`;
+  html += `<p class="p-greet">${esc(state.settings.greeting || DEFAULT_SETTINGS.greeting)}</p>`;
+  html += `<p class="p-body">${intro}${incident}</p>`;
+  html += `<p class="p-close">${closing}</p>`;
+  html += `<div class="sign-block">
+      <p class="who">নিবেদক</p>
+    </div>`;
+  html += `<div class="sign-line">
+      <span class="app-date">তারিখ: ${filingDateStr} খ্রি.</span>
+      <span class="pet-name">(${esc(nv(d.name))})</span>
+    </div>`;
+  html += `<div class="sign-block">
+      <p class="mob">মোবাঃ ${d.contactMobile?bn(d.contactMobile):BLANK}</p>
+    </div>`;
+  return html;
+}
+
+function renderPreview(force){
+  const paper = document.getElementById('paper');
+  if(!force && state.manualHTML[state.current]){
+    paper.innerHTML = state.manualHTML[state.current];
+  } else {
+    paper.innerHTML = buildPaperHTML();
+  }
+  attachPaperEditable();
+  updateManualBadge();
+}
+
+/* ============ Scale paper to fit container ============ */
+function fitPaper(){
+  const wrapper = document.getElementById('paperWrapper');
+  if(wrapper.offsetParent === null) return;
+  const paper = document.getElementById('paper');
+  paper.style.transform = 'none';
+  const naturalHeight = paper.offsetHeight;
+  const scale = Math.min(1, wrapper.clientWidth / 794);
+  paper.style.transform = `scale(${scale})`;
+  wrapper.style.height = (naturalHeight * scale) + 'px';
+}
+
+/* ============ PDF generation ============ */
+async function buildPdfDoc(){
+  const paper = document.getElementById('paper');
+  const grid = document.querySelector('.grid');
+  const wasHidden = grid.classList.contains('preview-hidden');
+  if(wasHidden) grid.classList.remove('preview-hidden');
+
+  const prevTransform = paper.style.transform;
+  paper.style.transform = 'none';
+  try{
+    if(document.fonts && document.fonts.ready){ await document.fonts.ready; }
+    await new Promise(r=>setTimeout(r, 80));
+
+    const canvas = await html2canvas(paper, { scale:3, backgroundColor:'#ffffff', useCORS:true });
+    if(!canvas.width || !canvas.height){
+      throw new Error('পেপার ক্যাপচার করা যায়নি (আকার শূন্য) — পেজ রিলোড করে আবার চেষ্টা করুন।');
+    }
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p','mm','a4');
+    const pageWidth = 210, pageHeight = 297;
+    const imgWidth = pageWidth;
+    const imgHeight = canvas.height * imgWidth / canvas.width;
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+    while(heightLeft > 0){
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+    return pdf;
+  } finally {
+    paper.style.transform = prevTransform;
+    if(wasHidden) grid.classList.add('preview-hidden');
+    fitPaper();
+  }
+}
+
+async function downloadPDF(){
+  const btn = document.getElementById('downloadBtn');
+  const originalLabel = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = 'তৈরি হচ্ছে...';
+  try{
+    const pdf = await buildPdfDoc();
+    const nameSlug = (state.data[state.current].name || 'draft').trim().replace(/\s+/g,'_');
+    pdf.save(`${FILE_SLUG[state.current]}-${nameSlug}.pdf`);
+  } catch(err){
+    alert('PDF তৈরি করতে সমস্যা হয়েছে। ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।');
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalLabel;
+  }
+}
+
+/* ============ DOC generation ============ */
+function noBorderTable(){
+  const t = document.createElement('table');
+  t.setAttribute('cellpadding','0');
+  t.setAttribute('cellspacing','0');
+  t.setAttribute('border','0');
+  t.style.border = 'none';
+  t.style.borderCollapse = 'collapse';
+  return t;
+}
+function noBorderCell(){
+  const td = document.createElement('td');
+  td.style.border = 'none';
+  td.style.padding = '0';
+  return td;
+}
+// Word's HTML renderer is unreliable with nested tables (a table inside a
+// table cell can silently drop content) and ignores `margin-left:auto`.
+// So the whole signature block (নিবেদক / date+name / মোবাঃ) is rebuilt as
+// ONE flat, borderless, single-row, 2-column table instead — left cell:
+// date, middle-left aligned; right cell: নিবেদক/name/মোবাঃ stacked as
+// separate lines, middle-center aligned. The table stretches to the full
+// page width (autofit to width), matching Word's "AutoFit to Window" table
+// behavior.
+function buildDocFriendlyHTML(rawHTML){
+  const temp = document.createElement('div');
+  temp.innerHTML = rawHTML;
+
+  const signBlocks = temp.querySelectorAll('.sign-block');
+  const signLine = temp.querySelector('.sign-line');
+  const firstBlock = signBlocks[0] || null;
+  const secondBlock = signBlocks[1] || null;
+
+  if(firstBlock && signLine && secondBlock){
+    const whoP = firstBlock.querySelector('.who');
+    const mobP = secondBlock.querySelector('.mob');
+    const whoHTML = whoP ? whoP.innerHTML : firstBlock.innerHTML;
+    const mobHTML = mobP ? mobP.innerHTML : secondBlock.innerHTML;
+    const dateSpan = signLine.querySelector('.app-date');
+    const nameSpan = signLine.querySelector('.pet-name');
+    const dateHTML = dateSpan ? dateSpan.innerHTML : '';
+    const nameHTML = nameSpan ? nameSpan.innerHTML : signLine.innerHTML;
+
+    const table = noBorderTable();
+    table.setAttribute('width','100%');
+    table.style.width = '100%';
+
+    const tr = document.createElement('tr');
+    const tdL = noBorderCell();
+    tdL.style.textAlign = 'left';
+    tdL.style.verticalAlign = 'middle';
+    tdL.style.paddingRight = '28px';
+    tdL.innerHTML = (dateHTML && dateHTML.trim()) ? dateHTML : '&nbsp;';
+
+    const tdR = noBorderCell();
+    tdR.style.textAlign = 'center';
+    tdR.style.verticalAlign = 'middle';
+    tdR.innerHTML = `${whoHTML}<br>${nameHTML}<br>${mobHTML}`;
+
+    tr.appendChild(tdL);
+    tr.appendChild(tdR);
+    table.appendChild(tr);
+
+    firstBlock.replaceWith(table);
+    signLine.remove();
+    secondBlock.remove();
+  }
+
+  return temp.innerHTML;
+}
+
+function buildDocBlob(){
+  const paper = document.getElementById('paper');
+  const contentHTML = buildDocFriendlyHTML(paper.innerHTML);
+
+  const docHTML = `<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<title>অভিযোগ</title>
+<!--[if gte mso 9]>
+<xml>
+<w:WordDocument>
+<w:View>Print</w:View>
+<w:DoNotOptimizeForBrowser/>
+</w:WordDocument>
+</xml>
+<![endif]-->
+<style>
+  @page { size: 21cm 29.7cm; margin: 2.3cm 2.4cm 1.9cm; }
+  body{ font-family:'Nikosh','Noto Serif Bengali','SolaimanLipi', Georgia, serif; font-size:14.5pt; line-height:1.5; color:#1E2622; }
+  .p-addr-line{ margin:0; }
+  .p-addr-line:not(:first-of-type){ margin-left:45px; }
+  .p-subject{ margin:18px 0 16px; font-weight:600; }
+  .p-greet{ margin:0 0 4px; }
+  .p-body{ margin:0 0 14px; text-align:justify; text-indent:42px; }
+  .p-close{ margin:0 0 28px; text-align:justify; }
+  .who{ margin:0 0 38px; text-align:center; font-weight:400; }
+  .mob{ margin:2px 0 0; text-align:center; font-weight:400; }
+  table, table td, table tr{ border:none !important; mso-border-alt:none; }
+  table{ border-collapse:collapse; }
+</style>
+</head>
+<body>
+${contentHTML}
+</body>
+</html>`;
+
+  return new Blob(['\ufeff', docHTML], { type: 'application/msword' });
+}
+
+function downloadDOC(){
+  const btn = document.getElementById('downloadDocBtn');
+  const originalLabel = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = 'তৈরি হচ্ছে...';
+
+  try{
+    const blob = buildDocBlob();
+    const url = URL.createObjectURL(blob);
+    const nameSlug = (state.data[state.current].name || 'draft').trim().replace(/\s+/g,'_');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${FILE_SLUG[state.current]}-${nameSlug}.doc`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 2000);
+  } catch(err){
+    alert('DOC ফাইল তৈরি করতে সমস্যা হয়েছে।');
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalLabel;
+  }
+}
+
+/* ============ Reset ============ */
+function resetForm(){
+  state.data[state.current] = {};
+  state.manualHTML[state.current] = null;
+  applyDefaultsIfEmpty(state.current);
+  renderForm(); renderPreview(true); fitPaper(); scheduleSave();
+}
+function regenerateFromForm(){
+  state.manualHTML[state.current] = null;
+  renderPreview(true); fitPaper(); scheduleSave();
+}
+
+/* ============ Settings actions ============ */
+function resetSettings(){
+  state.settings = {...DEFAULT_SETTINGS};
+  renderSettingsForm();
+  if(!state.manualHTML[state.current]){ renderPreview(); fitPaper(); }
+  scheduleSaveSettings();
+}
+
+function armedConfirmClick(btn, confirmLabel, action){
+  const original = btn.innerHTML;
+  let armed = false;
+  let timer = null;
+  btn.addEventListener('click', ()=>{
+    if(!armed){
+      armed = true;
+      btn.innerHTML = confirmLabel;
+      btn.classList.add('btn-confirm-armed');
+      timer = setTimeout(()=>{
+        armed = false;
+        btn.innerHTML = original;
+        btn.classList.remove('btn-confirm-armed');
+      }, 3000);
+    } else {
+      armed = false;
+      clearTimeout(timer);
+      btn.innerHTML = original;
+      btn.classList.remove('btn-confirm-armed');
+      action();
+    }
+  });
+}
+
+/* ============ Init ============ */
+/* ============ Preview show/hide toggle ============ */
+let previewVisible = false;
+function repositionActionbar(){
+  const actionbar = document.getElementById('actionbar');
+  const anchor = document.getElementById('actionbarAnchor');
+  const paperWrapper = document.getElementById('paperWrapper');
+  if(previewVisible && paperWrapper){
+    paperWrapper.insertAdjacentElement('afterend', actionbar);
+  } else if(anchor){
+    anchor.insertAdjacentElement('afterend', actionbar);
+  }
+}
+function updatePreviewVisibility(){
+  const grid = document.querySelector('.grid');
+  const btn = document.getElementById('previewToggleBtn');
+  if(previewVisible){
+    grid.classList.remove('preview-hidden');
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.8 21.8 0 0 1 5.06-6.06M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.8 21.8 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22"/></svg> লাইভ প্রিভিউ বন্ধ করুন';
+    renderPreview(); fitPaper();
+  } else {
+    grid.classList.add('preview-hidden');
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg> লাইভ প্রিভিউ দেখুন';
+  }
+  repositionActionbar();
+}
+document.getElementById('previewToggleBtn').addEventListener('click', ()=>{
+  previewVisible = !previewVisible;
+  updatePreviewVisibility();
+});
+
+function printApplication(){
+  const paper = document.getElementById('paper');
+  const prevTransform = paper.style.transform;
+  paper.style.transform = 'none';
+  const restore = () => {
+    paper.style.transform = prevTransform;
+    fitPaper();
+    window.removeEventListener('afterprint', restore);
+  };
+  window.addEventListener('afterprint', restore);
+  setTimeout(()=>{ window.print(); setTimeout(restore, 500); }, 50);
+}
+document.getElementById('printBtn').addEventListener('click', printApplication);
+
+/* ============ Save online (Vercel Blob) ============ */
+function blobToBase64(blob){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onloadend = ()=> resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function uploadToServer(filename, blob, contentType){
+  const base64 = await blobToBase64(blob);
+  let res;
+  try{
+    res = await fetch('/api/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename, base64, contentType })
+    });
+  } catch(networkErr){
+    throw new Error('নেটওয়ার্ক এরর: /api/save-এ পৌঁছানো যায়নি — অ্যাপটি কি Vercel-এ ডিপ্লয় করা আছে? (' + networkErr.message + ')');
+  }
+  if(!res.ok){
+    let detail = res.status + ' ' + res.statusText;
+    try{ const j = await res.json(); if(j && j.error) detail = j.error; }catch(e){}
+    throw new Error(detail);
+  }
+  return res.json();
+}
+
+async function saveOnline(){
+  const btn = document.getElementById('saveOnlineBtn');
+  const originalLabel = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = 'সংরক্ষণ হচ্ছে...';
+  try{
+    const nameSlug = (state.data[state.current].name || 'draft').trim().replace(/\s+/g,'_');
+    const base = `${FILE_SLUG[state.current]}-${nameSlug}`;
+
+    const pdf = await buildPdfDoc();
+    const pdfBlob = pdf.output('blob');
+    const pdfResult = await uploadToServer(`${base}.pdf`, pdfBlob, 'application/pdf');
+
+    const docBlob = buildDocBlob();
+    const docResult = await uploadToServer(`${base}.doc`, docBlob, 'application/msword');
+
+    alert('PDF ও DOC — দুটো ফাইলই সংরক্ষিত হয়েছে!\n\nPDF: ' + pdfResult.url + '\nDOC: ' + docResult.url + '\n\n"সংরক্ষিত" ট্যাবে গিয়েও দুটো খুঁজে পাবেন।');
+  } catch(err){
+    alert('অনলাইনে সংরক্ষণ করতে সমস্যা হয়েছে।\n\nবিস্তারিত: ' + (err && err.message ? err.message : err) + '\n\nসম্ভাব্য কারণ: (১) অ্যাপটি এখনো Vercel-এ ডিপ্লয় করা হয়নি — শুধু কম্পিউটারে ফাইল খুলে দেখলে এটি কাজ করবে না, অথবা (২) Vercel-এ Blob storage এখনো চালু করা হয়নি বা চালুর পর রিডিপ্লয় করা হয়নি।');
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalLabel;
+  }
+}
+document.getElementById('saveOnlineBtn').addEventListener('click', saveOnline);
+
+async function loadSavedList(){
+  const el = document.getElementById('savedList');
+  el.textContent = 'লোড হচ্ছে...';
+  try{
+    const res = await fetch('/api/list');
+    if(!res.ok) throw new Error('লোড ব্যর্থ');
+    const data = await res.json();
+    if(!data.files || !data.files.length){
+      el.innerHTML = '<p style="color:var(--ink-soft);font-size:13.5px;">এখনো কিছু সংরক্ষণ করা হয়নি।</p>';
+      return;
+    }
+    el.innerHTML = data.files.map(f=>{
+      const dt = new Date(f.uploadedAt);
+      const dateStr = isNaN(dt) ? '' : dt.toLocaleString('bn-BD');
+      const sizeKb = f.size ? Math.round(f.size/1024) + ' KB' : '';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);">
+        <div>
+          <div style="font-size:13.5px;font-weight:600;word-break:break-all;">${f.filename}</div>
+          <div style="font-size:11.5px;color:var(--ink-soft);">${dateStr} ${sizeKb?'· '+sizeKb:''}</div>
+        </div>
+        <a href="${f.url}" target="_blank" rel="noopener" class="btn btn-ghost" style="padding:8px 12px;font-size:12.5px;white-space:nowrap;">ডাউনলোড</a>
+      </div>`;
+    }).join('');
+  } catch(err){
+    el.innerHTML = '<p style="color:var(--maroon);font-size:13.5px;">তালিকা লোড করা যায়নি। /api/list সেটআপ আছে কিনা যাচাই করুন।</p>';
+    console.error(err);
+  }
+}
+document.querySelector('.tab-btn[data-tab="saved"]').addEventListener('click', loadSavedList);
+
+
+document.getElementById('downloadBtn').addEventListener('click', downloadPDF);
+document.getElementById('downloadDocBtn').addEventListener('click', downloadDOC);
+armedConfirmClick(document.getElementById('clearEntriesBtn'), '⚠️ নিশ্চিত করতে আবার চাপ দিন', resetForm);
+document.getElementById('bottomResetBtn').addEventListener('click', regenerateFromForm);
+document.getElementById('saveSettingsBtn').addEventListener('click', async ()=>{
+  readSettingsForm();
+  const ok = await persistSettings();
+  if(!state.manualHTML[state.current]){ renderPreview(); fitPaper(); }
+  flashSaved(ok);
+});
+armedConfirmClick(document.getElementById('resetSettingsBtn'), '⚠️ আবার চাপ দিন', resetSettings);
+window.addEventListener('resize', fitPaper);
+
+(async function init(){
+  initTabs();
+  attachSettingsLiveListeners();
+  state.settings = await loadSettings();
+  const saved = await loadAppState();
+  if(saved){
+    state.current = saved.current || 'mobile';
+    state.data = saved.data || { mobile:{}, missing:{}, dispute:{} };
+    state.manualHTML = saved.manualHTML || { mobile:null, missing:null, dispute:null };
+  }
+  state.settings = {...DEFAULT_SETTINGS, ...(state.settings || {})};
+  ['mobile','missing','dispute'].forEach(k => {
+    state.data[k] = state.data[k] || {};
+    applyDefaultsIfEmpty(k);
+  });
+  ['mobile','missing','dispute'].forEach(k=>{
+    if(!state.data[k]) state.data[k] = {};
+    if(state.manualHTML[k]===undefined) state.manualHTML[k] = null;
+    applyDefaultsIfEmpty(k);
+  });
+  renderSettingsForm();
+  renderSelector();
+  renderNote();
+  renderForm();
+  renderPreview();
+  updatePreviewVisibility();
+  setTimeout(fitPaper, 60);
+})();
+</script>
+
+
+</body>
+</html>
